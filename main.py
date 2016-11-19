@@ -1,4 +1,5 @@
 from bitarray import bitarray
+
 import numpy as np
 import sys
 import re
