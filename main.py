@@ -112,12 +112,12 @@ if __name__ == "__main__":
     prepared_text = inj.prepare_text(text)
     encoded_bits, efficiency = inj.encode(text=prepared_text)
     print("encoding efficiency: {}".format(efficiency))
-
+    print("encoded bit stream: {}".format(encoded_bits.bin))
     # loading encoded text to file example
-
+    '''
     with open(sys.argv[2], 'wb') as f:
         encoded_bits.tofile(f)
-
+    '''
     # save and load encoding, decoding tables to/from file example
     '''
     with open('tables', 'wb') as f:
@@ -131,7 +131,8 @@ if __name__ == "__main__":
     encoded_bits = Bits(filename=sys.argv[2]))
     '''
     decoded_text = inj.decode(encoded_bits)
-    print(prepared_text == decoded_text)
+
+    print("are original and decoded texts equal? : {}".format(prepared_text == decoded_text))
 
 
 
