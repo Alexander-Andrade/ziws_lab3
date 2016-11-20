@@ -78,18 +78,26 @@ class InjectiveTransform:
         gen = bits.split(self.delim)
         next(gen)
         for bits in gen:
-            ch_bits = bits[delim_pos:]
-            if len(ch_bits):
-                yield Bits(ch_bits)
+            if bits.startswith(self.delim):
+                ch_bits = bits[delim_pos:]
+                if len(ch_bits):
+                    yield Bits(ch_bits)
+
+    def find_last_char_code(self, bits):
+        sorted_codes = sorted(self.decoding_table.keys(), key=lambda key: len(key), reverse=True)
+        for code in sorted_codes:
+            if bits.startswith(code):
+                return code
 
     def decode(self, bits):
         ch_bits_generator = self.bits_without_delims_gen(bits)
         decoded_str = ""
         for ch_bits in ch_bits_generator:
-            #try:
+            try:
                 decoded_str += self.decoding_table[ch_bits]
-            # except KeyError:
-            #     print("Key err")
+            except KeyError:
+                code = self.find_last_char_code(ch_bits)
+                decoded_str += self.decoding_table[code]
         return decoded_str
 
 
@@ -106,10 +114,9 @@ if __name__ == "__main__":
     print("encoding efficiency: {}".format(efficiency))
 
     # loading encoded text to file example
-    '''
+
     with open(sys.argv[2], 'wb') as f:
         encoded_bits.tofile(f)
-    '''
 
     # save and load encoding, decoding tables to/from file example
     '''
@@ -118,8 +125,14 @@ if __name__ == "__main__":
     with open('tables', 'rb') as f:
         inj.tables_fromfile(f)
     '''
+
+    # loading encoded text from file
+    '''
+    encoded_bits = Bits(filename=sys.argv[2]))
+    '''
     decoded_text = inj.decode(encoded_bits)
-    print(decoded_text == prepared_text)
+    print(prepared_text == decoded_text)
+
 
 
 
