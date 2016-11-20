@@ -50,7 +50,6 @@ class InjectiveTransform:
         return text.lower()
 
     def encode(self, text):
-
         freq_table = self.get_freq_table(text)
         # sorting dict keys by the descending of letters frequencies
         sorted_symbols = sorted(freq_table.keys(), key=lambda key: freq_table[key], reverse=True)
@@ -93,9 +92,9 @@ if __name__ == "__main__":
     inj = InjectiveTransform()
     prepared_text = inj.prepare_text(text)
     encoded_bits, efficiency = inj.encode(text=prepared_text)
-    # print("encoding efficiency: {}".format(efficiency))
-    # with open(sys.argv[2], 'wb') as out_file:
-    #     encoded_bits.tofile(out_file)
+    print("encoding efficiency: {}".format(efficiency))
+    with open(sys.argv[2], 'wb') as out_file:
+        encoded_bits.tofile(out_file)
     decoded_text = inj.decode(encoded_bits)
     print(decoded_text == prepared_text)
 
