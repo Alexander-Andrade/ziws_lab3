@@ -1,1 +1,2 @@
 http://pythonhosted.org/bitstring/bitarray.html#bitstring.BitArray
+https://github.com/scott-griffiths/bitstring

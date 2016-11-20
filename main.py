@@ -1,41 +1,33 @@
 from bitarray import bitarray
-
-import numpy as np
+from bitstring import Bits, BitArray, BitStream, BitString
 import sys
 import re
 
 
 class JacksonCounter:
 
-    def __init__(self, n, init_reg_size=1, ):
-        self.reg = bitarray(init_reg_size)
-        self.reg.setall(False)
+    def __init__(self, n, init_size=1):
+        self.reg = BitArray(length=init_size)
         self.n = n
-        self.i = 0
 
-    def __invert_reg_bit(self, i):
-        self.reg[i] = True if self.reg[i] == False else True
-
-    def __next_code(self):
-        code = self.reg.copy()
-        if self.i < len(self.reg):
-            self.__invert_reg_bit(self.i)
-            self.i += 1
+    def next_code(self):
+        code = Bits(self.reg)
+        if self.reg.all(True):
+            self.reg.append('0b0')
+            self.reg.set(0)
         else:
-            self.reg.append(False)
-            self.reg.setall(False)
-            self.i = 0
+            self.reg.invert(-1)
+            self.reg.ror(1)
         return code
 
     def get_codes(self):
-        codes = [self.__next_code() for i in range(self.n)]
-        return codes
+        return [self.next_code() for i in range(self.n)]
 
 
 class InjectiveTransform:
 
     def __init__(self):
-        self.delim = bitarray("01")
+        self.delim = Bits("0b01")
         self.encoding_table = None
         self.decoding_table = None
 
@@ -51,44 +43,61 @@ class InjectiveTransform:
     def calc_efficiency(self, text, bits):
         return len(text.encode('utf8')) * 8 / len(bits)
 
-    def encode(self, text):
+    def prepare_text(self, text):
         # deleting all spaces and punctuation
         text = re.sub(r'[ ,.!:-;–\n]+', '', text)
         # convert text to lowercase
-        text = text.lower()
+        return text.lower()
+
+    def encode(self, text):
+
         freq_table = self.get_freq_table(text)
         # sorting dict keys by the descending of letters frequencies
         sorted_symbols = sorted(freq_table.keys(), key=lambda key: freq_table[key], reverse=True)
-        jk = JacksonCounter(len(sorted_symbols), 1)
+        # get the list of codes for letters, the list is generated via Jackson counter
+        jk = JacksonCounter(n=len(sorted_symbols), init_size=1)
         codes = jk.get_codes()
-        codes_stings = map(lambda code: code.to01(), codes)
+        # get encoding and decoding tables
         self.encoding_table = dict(zip(sorted_symbols, codes))
-        self.decoding_table = dict(zip(codes_stings, sorted_symbols))
-        encoded_bits = bitarray()
+        self.decoding_table = dict(zip(codes, sorted_symbols))
+        encoded_bits = BitArray()
         for ch in text:
-            encoded_bits.extend(self.delim+self.encoding_table[ch])
+            encoded_bits.append(self.delim+self.encoding_table[ch])
         efficiency = self.calc_efficiency(text, encoded_bits)
         return encoded_bits, efficiency
 
+    def bits_without_delims_gen(self, bits):
+        delim_pos = len(self.delim)
+        gen = bits.split(self.delim)
+        next(gen)
+        for bits in gen:
+            ch_bits = bits[delim_pos:]
+            if len(ch_bits):
+                yield Bits(ch_bits)
+
     def decode(self, bits):
-        s = bits.to01()
-        encoded_letters = s.split(self.delim.to01())[1:-1]
+        ch_bits_generator = self.bits_without_delims_gen(bits)
         decoded_str = ""
-        for en_l in encoded_letters:
-            decoded_str += self.decoding_table[en_l]
+        for ch_bits in ch_bits_generator:
+            #try:
+                decoded_str += self.decoding_table[ch_bits]
+            # except KeyError:
+            #     print("Key err")
         return decoded_str
 
 
 if __name__ == "__main__":
+    text = ''
     with open(sys.argv[1], 'r', encoding="utf8") as f:
         text = f.read()
-        inj = InjectiveTransform()
-        encoded_bits, efficiency = inj.encode(text=text)
-        print("encoding efficiency: {}".format(efficiency))
-        out_file = open(sys.argv[2], 'wb')
-        encoded_bits.tofile(out_file)
-        decoded = inj.decode(encoded_bits)
-
+    inj = InjectiveTransform()
+    prepared_text = inj.prepare_text(text)
+    encoded_bits, efficiency = inj.encode(text=prepared_text)
+    # print("encoding efficiency: {}".format(efficiency))
+    # with open(sys.argv[2], 'wb') as out_file:
+    #     encoded_bits.tofile(out_file)
+    decoded_text = inj.decode(encoded_bits)
+    print(decoded_text == prepared_text)
 
 
 
