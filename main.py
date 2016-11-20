@@ -1,5 +1,5 @@
-from bitarray import bitarray
 from bitstring import Bits, BitArray, BitStream, BitString
+import pickle
 import sys
 import re
 
@@ -39,6 +39,14 @@ class InjectiveTransform:
             else:
                 freq_table[ch] = 1
         return freq_table
+
+    def tables_tofile(self, f):
+        pickle.dump(self.encoding_table, f)
+        pickle.dump(self.decoding_table, f)
+
+    def tables_fromfile(self, f):
+        self.encoding_table = pickle.load(f)
+        self.decoding_table = pickle.load(f)
 
     def calc_efficiency(self, text, bits):
         return len(text.encode('utf8')) * 8 / len(bits)
@@ -87,14 +95,29 @@ class InjectiveTransform:
 
 if __name__ == "__main__":
     text = ''
+    # read text from file
     with open(sys.argv[1], 'r', encoding="utf8") as f:
         text = f.read()
+
     inj = InjectiveTransform()
+    # removing punctuation and do text lowercase
     prepared_text = inj.prepare_text(text)
     encoded_bits, efficiency = inj.encode(text=prepared_text)
     print("encoding efficiency: {}".format(efficiency))
-    with open(sys.argv[2], 'wb') as out_file:
-        encoded_bits.tofile(out_file)
+
+    # loading encoded text to file example
+    '''
+    with open(sys.argv[2], 'wb') as f:
+        encoded_bits.tofile(f)
+    '''
+
+    # save and load encoding, decoding tables to/from file example
+    '''
+    with open('tables', 'wb') as f:
+        inj.tables_tofile(f)
+    with open('tables', 'rb') as f:
+        inj.tables_fromfile(f)
+    '''
     decoded_text = inj.decode(encoded_bits)
     print(decoded_text == prepared_text)
 
